@@ -1,7 +1,11 @@
 ﻿"""Discord events and lifecycle helpers."""
 
 from .common import *
-from .response_flow import _generate_and_respond, _generate_batched_response
+from .response_flow import (
+    _generate_and_respond,
+    _generate_batched_response,
+    _is_inline_duck_search_message,
+)
 # ---------------------------------------------------------------------------
 # Events
 # ---------------------------------------------------------------------------
