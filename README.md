@@ -47,6 +47,20 @@ The bot will come online and sync its slash commands automatically.
 
 ---
 
+## Project Structure
+
+The runtime entrypoint remains `bot.py`, but the main application logic is now split into the `chatbuddy/` package for safer expansion:
+
+- `chatbuddy/runtime.py` - shared bot instance, environment bootstrapping, and mutable runtime state
+- `chatbuddy/events.py` - Discord lifecycle hooks and background-manager startup
+- `chatbuddy/response_flow.py` - mention/reply generation flow and batching logic
+- `chatbuddy/commands/` - slash commands grouped by responsibility
+- `chatbuddy/tamagotchi/` - Tamagotchi state helpers, runtime logic, and Discord UI
+
+Compatibility wrappers keep the existing top-level import paths working, so `python bot.py` and imports like `from tamagotchi import ...` still behave as before.
+
+---
+
 ## Setup Walkthrough
 
 Bot-management commands are restricted to `BOT_OWNER_ID` plus any extra IDs you allow with `/set-command-user`.
