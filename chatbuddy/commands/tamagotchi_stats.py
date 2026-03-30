@@ -298,13 +298,3 @@ async def set_tama_sickness(interaction: discord.Interaction, health_damage: flo
         ephemeral=True
     )
 
-
-@bot.tree.command(name="set-tama-feed", description="Configure the feed button")
-@app_commands.describe(
-    amount="Hunger restored per feed",
-    cooldown="Cooldown in seconds",
-    energy_every="Grant energy on every Nth feed",
-    energy_gain="Energy granted when the Nth feed is reached",
-)
-@app_commands.default_permissions(administrator=True)
-

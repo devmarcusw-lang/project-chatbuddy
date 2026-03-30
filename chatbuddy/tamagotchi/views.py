@@ -629,4 +629,64 @@ class GameSelectView(ui.View):
 
 
 class RPSView(ui.View):
+    def __init__(self, config: dict, manager: TamagotchiManager, bot_choice: str):
+        super().__init__(timeout=300)
+        self.config = config
+        self.manager = manager
+        self.bot_choice = bot_choice
+
+    async def _finish_round(self, interaction: discord.Interaction, user_choice: str) -> None:
+        user_name = interaction.user.display_name
+        bot_name = _bot_display_name(interaction)
+        user_emoji = _RPS_EMOJI.get(user_choice, "🎮")
+        bot_emoji = _RPS_EMOJI.get(self.bot_choice, "🎮")
+
+        if user_choice == self.bot_choice:
+            outcome = "It's a draw."
+        elif (
+            (user_choice == "rock" and self.bot_choice == "scissors")
+            or (user_choice == "paper" and self.bot_choice == "rock")
+            or (user_choice == "scissors" and self.bot_choice == "paper")
+        ):
+            outcome = f"**{user_name}** wins."
+        else:
+            outcome = f"**{bot_name}** wins."
+
+        public_result = (
+            "🎮 **Rock, Paper, Scissors**\n"
+            f"**{user_name}** chose {user_emoji} **{user_choice.title()}**.\n"
+            f"**{bot_name}** chose {bot_emoji} **{self.bot_choice.title()}**.\n"
+            f"{outcome}"
+        )
+
+        await interaction.response.edit_message(
+            content=f"You picked {user_emoji} **{user_choice.title()}**. Result posted publicly.",
+            view=None,
+        )
+
+        if interaction.channel is None:
+            return
+
+        result_message = await interaction.channel.send(
+            append_tamagotchi_footer(public_result, self.config, self.manager),
+            view=TamagotchiView(self.config, self.manager),
+        )
+        _log_tamagotchi_action(
+            self.config,
+            interaction,
+            "play",
+            result_message.id,
+        )
+
+    @ui.button(label="Rock", emoji="🪨", style=discord.ButtonStyle.secondary, row=0)
+    async def rock_btn(self, interaction: discord.Interaction, button: ui.Button):
+        await self._finish_round(interaction, "rock")
+
+    @ui.button(label="Paper", emoji="📄", style=discord.ButtonStyle.secondary, row=0)
+    async def paper_btn(self, interaction: discord.Interaction, button: ui.Button):
+        await self._finish_round(interaction, "paper")
+
+    @ui.button(label="Scissors", emoji="✂️", style=discord.ButtonStyle.secondary, row=0)
+    async def scissors_btn(self, interaction: discord.Interaction, button: ui.Button):
+        await self._finish_round(interaction, "scissors")
 
