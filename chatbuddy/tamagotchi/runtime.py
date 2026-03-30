@@ -8,6 +8,12 @@ def _build_tama_view(config: dict, manager):
     from .views import TamagotchiView
 
     return TamagotchiView(config, manager)
+
+
+async def _send_soul_logs(bot_ref, config: dict, soul_logs: list[str]) -> None:
+    from bot_helpers import send_soul_logs
+
+    await send_soul_logs(bot_ref, config, soul_logs)
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # TamagotchiManager  â€” runtime state that doesn't belong in config.json
 # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -941,5 +947,5 @@ def append_tamagotchi_footer(text: str, config: dict, manager: TamagotchiManager
         return footer.lstrip("\n")
     return text.rstrip() + footer
 
-__all__ = [name for name in globals() if not name.startswith("__")]
+__all__ = [name for name in globals() if not name.startswith("_")]
 
