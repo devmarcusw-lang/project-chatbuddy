@@ -175,19 +175,42 @@ def _build_user_text(
     return "\n".join(parts)
 
 
+def _part_is_thought(part: dict) -> bool:
+    """Return True when the provider marks a text part as internal thinking."""
+    value = part.get("thought")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return False
+
+
 def _extract_text(data: dict) -> str | None:
-    """Concatenate every text part from the first candidate response."""
+    """
+    Concatenate user-visible text parts from the first candidate response.
+
+    Gemini can return separate text parts for internal thinking and the final
+    answer. We prefer non-thought parts when present, but keep a legacy
+    fallback to all text parts so older prompt/tag flows still work.
+    """
     candidates = data.get("candidates", [])
     if not candidates:
         return None
     candidate = candidates[0]
     if candidate.get("finishReason") == "SAFETY":
         return None
-    text_parts = [
-        part["text"]
-        for part in candidate.get("content", {}).get("parts", [])
-        if part.get("text")
-    ]
+
+    visible_text_parts: list[str] = []
+    fallback_text_parts: list[str] = []
+    for part in candidate.get("content", {}).get("parts", []):
+        text = part.get("text")
+        if not text:
+            continue
+        fallback_text_parts.append(text)
+        if not _part_is_thought(part):
+            visible_text_parts.append(text)
+
+    text_parts = visible_text_parts or fallback_text_parts
     if not text_parts:
         return None
     return "\n".join(text_parts).strip()
