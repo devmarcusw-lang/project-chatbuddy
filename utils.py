@@ -35,6 +35,9 @@ def chunk_message(text: str, limit: int = 2000) -> List[str]:
     Split *text* into chunks of at most *limit* characters.
     Prefers splitting at newlines, then spaces, to keep messages readable.
     """
+    if not text:
+        return []
+
     if len(text) <= limit:
         return [text]
 
@@ -198,7 +201,10 @@ def extract_thoughts(text: str) -> tuple[str, str | None]:
       - thoughts_text: the concatenated inner content of all thought blocks
         (or None if no tags were found).
     """
-    pattern = re.compile(r"<my-thoughts>(.*?)</my-thoughts>", re.DOTALL)
+    pattern = re.compile(
+        r"<\s*my-thoughts\s*>(.*?)</\s*my-thoughts\s*>",
+        re.DOTALL | re.IGNORECASE,
+    )
     matches = pattern.findall(text)
 
     if not matches:

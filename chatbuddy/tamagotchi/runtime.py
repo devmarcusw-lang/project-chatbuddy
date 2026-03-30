@@ -272,7 +272,7 @@ class TamagotchiManager:
         ce_enabled = ce_channels.get(str(channel.id), True)
         context = format_context(history_messages, ce_enabled=ce_enabled)
 
-        response_text, audio_bytes, soul_logs, _ = await generate(
+        response_text, audio_bytes, soul_logs, reminder_cmds = await generate(
             prompt=prompt,
             context=context,
             config=self.config,
@@ -280,7 +280,7 @@ class TamagotchiManager:
             speaker_id="system",
         )
         clean_text, thoughts_text = extract_thoughts(response_text)
-        response_text = clean_text
+        response_text = clean_text.strip()
 
         soc_channel_id = str(self.config.get("soc_channel_id", "") or "").strip()
         if thoughts_text and self.config.get("soc_enabled", False) and soc_channel_id:
@@ -288,6 +288,12 @@ class TamagotchiManager:
             if thought_channel is not None:
                 for chunk in chunk_message(thoughts_text):
                     await thought_channel.send(chunk)
+
+        if reminder_cmds:
+            from reminders import ReminderManager
+
+            rm = ReminderManager(self.bot, self.config)
+            await rm._apply_commands(reminder_cmds, source_channel_id=str(channel.id))
 
         death_msg = deplete_stats(self.config)
         started_sleep = False
@@ -298,12 +304,12 @@ class TamagotchiManager:
             response_text = (response_text + "\n\n" + death_msg) if response_text else death_msg
 
         response_text = resolve_custom_emoji(response_text, getattr(channel, "guild", None))
-        if self.config.get("tama_enabled", False):
+        if response_text and self.config.get("tama_enabled", False):
             response_text = append_tamagotchi_footer(response_text, self.config, self)
             wake_view = _build_tama_view(self.config, self)
         else:
             wake_view = None
-        chunks = chunk_message(response_text) if response_text else []
+        chunks = chunk_message(response_text)
 
         if audio_bytes:
             audio_file = discord.File(fp=io.BytesIO(audio_bytes), filename="wake.wav")
@@ -313,7 +319,8 @@ class TamagotchiManager:
             view = wake_view if i == len(chunks) - 1 else None
             await channel.send(chunk, view=view)
 
-        if soul_logs and self.config.get("soul_channel_enabled"):
+        await _send_soul_logs(self.bot, self.config, soul_logs)
+        if False:
             soul_channel_id = str(self.config.get("soul_channel_id", "") or "").strip()
             soul_channel = await self._resolve_channel(soul_channel_id)
             if soul_channel is not None:
@@ -531,7 +538,7 @@ class TamagotchiManager:
             "tama_hatch_prompt",
             "You have just hatched in this Discord server. Your life has begun right now. Send your very first message to the server.",
         )
-        response_text, audio_bytes, soul_logs, _ = await generate(
+        response_text, audio_bytes, soul_logs, reminder_cmds = await generate(
             prompt=prompt,
             context="",
             config=self.config,
@@ -539,7 +546,7 @@ class TamagotchiManager:
             speaker_id="system",
         )
         clean_text, thoughts_text = extract_thoughts(response_text)
-        response_text = clean_text
+        response_text = clean_text.strip()
 
         soc_channel_id = str(self.config.get("soc_channel_id", "") or "").strip()
         if thoughts_text and self.config.get("soc_enabled", False) and soc_channel_id:
@@ -548,13 +555,19 @@ class TamagotchiManager:
                 for chunk in chunk_message(thoughts_text):
                     await thought_channel.send(chunk)
 
+        if reminder_cmds:
+            from reminders import ReminderManager
+
+            rm = ReminderManager(self.bot, self.config)
+            await rm._apply_commands(reminder_cmds, source_channel_id=str(channel.id))
+
         response_text = resolve_custom_emoji(response_text, getattr(channel, "guild", None))
-        if self.config.get("tama_enabled", False):
+        if response_text and self.config.get("tama_enabled", False):
             response_text = append_tamagotchi_footer(response_text, self.config, self)
             hatch_view = _build_tama_view(self.config, self)
         else:
             hatch_view = None
-        chunks = chunk_message(response_text) if response_text else []
+        chunks = chunk_message(response_text)
 
         if audio_bytes:
             audio_file = discord.File(fp=io.BytesIO(audio_bytes), filename="hatch.wav")
@@ -564,7 +577,8 @@ class TamagotchiManager:
             view = hatch_view if i == len(chunks) - 1 else None
             await channel.send(chunk, view=view)
 
-        if soul_logs and self.config.get("soul_channel_enabled"):
+        await _send_soul_logs(self.bot, self.config, soul_logs)
+        if False:
             soul_channel_id = str(self.config.get("soul_channel_id", "") or "").strip()
             soul_channel = await self._resolve_channel(soul_channel_id)
             if soul_channel is not None:

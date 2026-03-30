@@ -31,6 +31,7 @@ from utils import (
     collect_context_entries,
 )
 from tamagotchi import TamagotchiView, append_tamagotchi_footer
+from bot_helpers import send_soul_logs
 
 REMINDERS_FILE = "reminders.json"
 
@@ -371,9 +372,8 @@ class ReminderManager:
                     is_dead = True
 
             # Process reminder/wake-time tags the bot may have included
-            response_text, new_cmds = extract_reminder_commands(response_text)
-            if new_cmds:
-                await self._apply_commands(new_cmds, source_channel_id=str(channel.id))
+            if reminder_cmds:
+                await self._apply_commands(reminder_cmds, source_channel_id=str(channel.id))
 
             # SoC thought extraction
             soc_enabled = self.config.get("soc_enabled", False)
@@ -383,10 +383,11 @@ class ReminderManager:
                 if thought_ch is not None:
                     for c in chunk_message(thoughts_text):
                         await thought_ch.send(c)
-            response_text = clean_text
+            response_text = clean_text.strip()
 
             # Resolve custom emoji
             response_text = resolve_custom_emoji(response_text, channel.guild)
+            visible_response_text = response_text.strip()
 
             # Send audio if present
             if audio_bytes:
@@ -396,22 +397,23 @@ class ReminderManager:
                 await channel.send(file=audio_file)
 
             # Send text response
-            if response_text:
+            if visible_response_text:
                 kind_label = "⏰ Reminder" if kind == "reminder" else "🔔 Auto-Wake"
                 # Tamagotchi: append stats footer if there is visible text
                 tama_view = None
                 tama_manager = getattr(self.bot, "tama_manager", None)
                 if self.config.get("tama_enabled", False) and tama_manager:
                     tama_view = TamagotchiView(self.config, tama_manager)
-                    response_text = append_tamagotchi_footer(response_text, self.config, tama_manager)
+                    visible_response_text = append_tamagotchi_footer(visible_response_text, self.config, tama_manager)
                 footer = f"\n-# {kind_label}: *{entry_name}*"
-                chunks = chunk_message(response_text)
+                chunks = chunk_message(visible_response_text)
                 chunks[-1] += footer
                 for i, chunk in enumerate(chunks):
                     await channel.send(chunk, view=tama_view if i == len(chunks) - 1 else None)
 
             # Soul logs
-            if soul_logs and self.config.get("soul_channel_enabled"):
+            await send_soul_logs(self.bot, self.config, soul_logs)
+            if False:
                 ch_id = self.config.get("soul_channel_id")
                 if ch_id:
                     soul_ch = self.bot.get_channel(int(ch_id))

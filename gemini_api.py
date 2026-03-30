@@ -176,17 +176,21 @@ def _build_user_text(
 
 
 def _extract_text(data: dict) -> str | None:
-    """Pull the first text part out of a generateContent response."""
+    """Concatenate every text part from the first candidate response."""
     candidates = data.get("candidates", [])
     if not candidates:
         return None
     candidate = candidates[0]
     if candidate.get("finishReason") == "SAFETY":
         return None
-    for part in candidate.get("content", {}).get("parts", []):
-        if "text" in part:
-            return part["text"]
-    return None
+    text_parts = [
+        part["text"]
+        for part in candidate.get("content", {}).get("parts", [])
+        if part.get("text")
+    ]
+    if not text_parts:
+        return None
+    return "\n".join(text_parts).strip()
 
 
 def _requires_search(prompt: str) -> bool:

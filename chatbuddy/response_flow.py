@@ -8,6 +8,10 @@ def _is_inline_duck_search_message(message: discord.Message) -> bool:
     return content.lower().startswith("!search")
 
 
+def _has_public_response_text(text: str | None) -> bool:
+    return bool(text and text.strip())
+
+
 def _extract_duck_search_query(text: str) -> tuple[str | None, bool]:
     cleaned = (text or "").strip()
     if not cleaned:
@@ -194,19 +198,22 @@ async def _generate_and_respond(message: discord.Message):
         response_text = await _handle_soc_extraction(response_text, bot, bot_config)
         response_text = resolve_custom_emoji(response_text, message.guild)
 
-        tama_view = _build_tama_view()
+        public_response_text = response_text.strip()
+        if not public_response_text:
+            print("[ChatBuddy] Visible reply was empty after hidden thought/tag extraction.")
+        tama_view = _build_tama_view() if _has_public_response_text(public_response_text) else None
         if tama_view:
-            response_text = append_tamagotchi_footer(response_text, bot_config, tama_manager)
+            public_response_text = append_tamagotchi_footer(public_response_text, bot_config, tama_manager)
 
         if audio_bytes:
             audio_file = discord.File(fp=io.BytesIO(audio_bytes), filename="chatbuddy_voice.wav")
             await message.reply(file=audio_file, mention_author=False)
-            chunks = chunk_message(response_text)
+            chunks = chunk_message(public_response_text)
             for i, chunk in enumerate(chunks):
                 v = tama_view if (i == len(chunks) - 1 and tama_view) else None
                 await message.channel.send(chunk, view=v)
         else:
-            chunks = chunk_message(response_text)
+            chunks = chunk_message(public_response_text)
             for i, chunk in enumerate(chunks):
                 v = tama_view if (i == len(chunks) - 1 and tama_view) else None
                 if i == 0:
@@ -216,7 +223,8 @@ async def _generate_and_respond(message: discord.Message):
         if started_sleep and tama_manager:
             await tama_manager.send_sleep_announcement(message.channel.id)
 
-        if soul_logs and bot_config.get("soul_channel_enabled"):
+        await _send_soul_logs(bot, bot_config, soul_logs)
+        if False:
             ch_id = bot_config.get("soul_channel_id")
             if ch_id:
                 soul_ch = bot.get_channel(int(ch_id))
@@ -325,26 +333,30 @@ async def _generate_batched_response(channel: discord.TextChannel, batch: list[d
         response_text = await _handle_soc_extraction(response_text, bot, bot_config)
         response_text = resolve_custom_emoji(response_text, channel.guild)
 
-        tama_view = _build_tama_view()
+        public_response_text = response_text.strip()
+        if not public_response_text:
+            print("[ChatBuddy] Visible batched reply was empty after hidden thought/tag extraction.")
+        tama_view = _build_tama_view() if _has_public_response_text(public_response_text) else None
         if tama_view:
-            response_text = append_tamagotchi_footer(response_text, bot_config, tama_manager)
+            public_response_text = append_tamagotchi_footer(public_response_text, bot_config, tama_manager)
 
         if audio_bytes:
             audio_file = discord.File(fp=io.BytesIO(audio_bytes), filename="chatbuddy_voice.wav")
             await channel.send(file=audio_file)
-            chunks = chunk_message(response_text)
+            chunks = chunk_message(public_response_text)
             for i, chunk in enumerate(chunks):
                 v = tama_view if (i == len(chunks) - 1 and tama_view) else None
                 await channel.send(chunk, view=v)
         else:
-            chunks = chunk_message(response_text)
+            chunks = chunk_message(public_response_text)
             for i, chunk in enumerate(chunks):
                 v = tama_view if (i == len(chunks) - 1 and tama_view) else None
                 await channel.send(chunk, view=v)
         if started_sleep and tama_manager:
             await tama_manager.send_sleep_announcement(channel.id)
 
-        if soul_logs and bot_config.get("soul_channel_enabled"):
+        await _send_soul_logs(bot, bot_config, soul_logs)
+        if False:
             ch_id = bot_config.get("soul_channel_id")
             if ch_id:
                 soul_ch = bot.get_channel(int(ch_id))
