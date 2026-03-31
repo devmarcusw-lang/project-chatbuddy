@@ -188,25 +188,39 @@ async def remove_tama_item(interaction: discord.Interaction, name_or_id: str):
 @bot.tree.command(name="set-tama-play", description="Configure the play button")
 @app_commands.describe(
     base_happiness="Base happiness gained when a play session starts",
-    cooldown="Cooldown in seconds",
 )
 @app_commands.default_permissions(administrator=True)
 async def set_tama_play(
     interaction: discord.Interaction,
-    base_happiness: float, cooldown: int,
+    base_happiness: float,
 ):
-    if cooldown < 0:
-        await interaction.response.send_message("⚠️ Cooldown must be ≥ 0.", ephemeral=True)
-        return
     if base_happiness < 0:
         await interaction.response.send_message("⚠️ Base happiness must be ≥ 0.", ephemeral=True)
         return
     bot_config["tama_play_happiness"] = round(base_happiness, 2)
-    bot_config["tama_cd_play"] = cooldown
     save_config(bot_config)
     await interaction.response.send_message(
-        f"✅ Play: base +**{base_happiness:g}** happiness per session, **{cooldown}s** cooldown. "
-        "RPS outcome rewards are configured separately with `/set-rps-rewards`.",
+        f"✅ Play: base +**{base_happiness:g}** happiness per session. "
+        "The Play button is just the game menu, so it has no cooldown. "
+        "RPS is configured separately with `/set-rps-rewards` and `/set-rps-cooldown`.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(name="set-rps-cooldown", description="Configure the Rock-Paper-Scissors cooldown")
+@app_commands.describe(cooldown="Cooldown in seconds between RPS games")
+@app_commands.default_permissions(administrator=True)
+async def set_rps_cooldown(
+    interaction: discord.Interaction,
+    cooldown: int,
+):
+    if cooldown < 0:
+        await interaction.response.send_message("⚠️ Cooldown must be ≥ 0.", ephemeral=True)
+        return
+    bot_config["tama_cd_rps"] = cooldown
+    save_config(bot_config)
+    await interaction.response.send_message(
+        f"✅ RPS cooldown: **{cooldown}s**. The Play button itself stays cooldown-free.",
         ephemeral=True,
     )
 

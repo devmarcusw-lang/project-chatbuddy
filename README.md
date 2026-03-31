@@ -246,8 +246,9 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 | `/add-tama-item` | Add or update a Tamagotchi inventory item, including fill multiplier, energy multiplier, direct energy amount, stock, emoji, button color, happiness amount, and Lucky Gift pool membership |
 | `/show-tama-items` | Show all configured Tamagotchi inventory items and current stock |
 | `/remove-tama-item` | Remove a Tamagotchi inventory item |
-| `/set-tama-play` | Set the base happiness gain and cooldown for starting Play |
+| `/set-tama-play` | Set the base happiness gain for starting a play session |
 | `/set-rps-rewards` | Set the happiness gained when the user wins, on a draw, and when the bot wins |
+| `/set-rps-cooldown` | Set the Rock-Paper-Scissors cooldown |
 | `/set-tama-lucky-gift` | Set Lucky Gift cooldown, reveal countdown, and misc item cooldown |
 | `/set-tama-medicate` | Set cooldown, HP heal amount, and happiness cost for Medicate |
 | `/set-tama-clean` | Set cooldown for Clean |
@@ -288,17 +289,18 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 6. Inventory, Chatter, and Play are always attached to public Tamagotchi messages. Medicate appears while the bot is sick or missing health, and Clean only appears while dirty.
 7. Pressing Play now opens a user-only game menu with one button per game.
 8. Rock-Paper-Scissors remains available from that menu. Intermediate choices stay private to the player; the final result is public, and the round awards configurable happiness based on whether the user wins, the round draws, or the bot wins.
-9. Lucky Gift is also available from the game menu. It has its own configurable cooldown and reveal timer, shows a live countdown, and then awards a random configured prize from the Lucky Gift pool, including configurable misc rewards like a battery that restores energy.
-10. Food, drink, and misc items are consumed from the user-only inventory menu. Each inventory item has its own emoji, button color, stock amount, fill multiplier, energy multiplier, optional direct energy value, and optional happiness value.
-11. Misc items use their own configurable cooldown so things like teddy bears can be used without sharing the food or drink timers.
-12. Feed and Drink effects still share the existing global food and drink cooldowns. Hunger and thirst no longer drain per turn; they drain only when energy is spent.
-13. Rock-Paper-Scissors no longer applies its own hunger or thirst loss. Only energy is spent, and hunger/thirst follow from that energy loss.
-14. Energy decreases on API use and games. When energy reaches `0`, the bot automatically goes to sleep, posts a sleep message, and wakes later with full energy.
-15. While sleeping, the bot refuses normal chat, auto-chat, heartbeat, and revival, but reminders still fire. When sleep ends, the original sleep post stays unchanged in chat history and the bot receives a configurable hidden wake prompt so it can decide whether to respond to anything that happened while it slept.
-16. If the bot is left alone, passive energy recharge restores energy after a configurable inactivity period.
-17. Any real interaction resets both the passive recharge timer and the loneliness timer, including mentions, replies, games, inventory use, clean/medicate/rest, and any auto-chat or heartbeat cycle whose latest context message came from someone other than the bot itself.
-18. Happiness no longer drains per turn by default. Instead it drops by the configured amount each time the configured loneliness interval passes without interaction, and you can also configure extra happiness loss on LLM turns when energy falls below a chosen percentage.
-19. When the bot is sick, sickness drains HP every turn.
+9. The Play button itself is only the submenu entry and has no cooldown. Rock-Paper-Scissors has its own configurable cooldown, and Lucky Gift keeps its separate configurable cooldown and reveal timer.
+10. Lucky Gift is also available from the game menu. It has its own configurable cooldown and reveal timer, shows a live countdown, and then awards a random configured prize from the Lucky Gift pool, including configurable misc rewards like a battery that restores energy.
+11. Food, drink, and misc items are consumed from the user-only inventory menu. Each inventory item has its own emoji, button color, stock amount, fill multiplier, energy multiplier, optional direct energy value, and optional happiness value.
+12. Misc items use their own configurable cooldown so things like teddy bears can be used without sharing the food or drink timers.
+13. Feed and Drink effects still share the existing global food and drink cooldowns. Hunger and thirst no longer drain per turn; they drain only when energy is spent.
+14. Rock-Paper-Scissors no longer applies its own hunger or thirst loss. Only energy is spent, and hunger/thirst follow from that energy loss.
+15. Energy decreases on API use and games. When energy reaches `0`, the bot automatically goes to sleep, posts a sleep message, and wakes later with full energy.
+16. While sleeping, the bot refuses normal chat, auto-chat, heartbeat, and revival, but reminders still fire. When sleep ends, the original sleep post stays unchanged in chat history and the bot receives a configurable hidden wake prompt so it can decide whether to respond to anything that happened while it slept.
+17. If the bot is left alone, passive energy recharge restores energy after a configurable inactivity period.
+18. Any real interaction resets both the passive recharge timer and the loneliness timer, including mentions, replies, games, inventory use, clean/medicate/rest, and any auto-chat or heartbeat cycle whose latest context message came from someone other than the bot itself.
+19. Happiness no longer drains per turn by default. Instead it drops by the configured amount each time the configured loneliness interval passes without interaction, and you can also configure extra happiness loss on LLM turns when energy falls below a chosen percentage.
+20. When the bot is sick, sickness drains HP every turn.
 20. The Chatter button is grey like Play, Medicate, and Clean. It can be enabled or disabled, has its own cooldown, and triggers a configurable hidden system prompt that lets the bot decide what to say based on recent chat history.
 20. Medicine is allowed while the bot is sick or while health is below max. It cures sickness, restores configurable HP, and costs configurable happiness.
 21. Dirt no longer appears instantly. After the configured food threshold is reached, one or more hidden poop timers are queued. Each timer picks a random whole-minute delay from `1` up to the configured max and posts a script-only poop message when it pops.

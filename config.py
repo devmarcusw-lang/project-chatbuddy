@@ -183,7 +183,8 @@ DEFAULTS = {
     "tama_cd_feed": 60,
     "tama_cd_drink": 30,
     "tama_cd_other": 60,
-    "tama_cd_play": 60,
+    "tama_cd_play": 0,
+    "tama_cd_rps": 60,
     "tama_cd_medicate": 60,
     "tama_cd_clean": 60,
     # Configurable response messages
@@ -329,6 +330,13 @@ def _migrate_tamagotchi_default_tuning(config: dict, stored: dict | None = None)
         if stored_play_happiness == 10.0:
             config["tama_play_happiness"] = 0.0
             changed = True
+
+    if "tama_cd_rps" not in stored and "tama_cd_play" in stored:
+        try:
+            config["tama_cd_rps"] = int(stored.get("tama_cd_play", config.get("tama_cd_rps", 60)) or 0)
+        except (TypeError, ValueError):
+            config["tama_cd_rps"] = int(config.get("tama_cd_rps", 60) or 60)
+        changed = True
 
     return changed
 

@@ -409,14 +409,6 @@ class PlayButton(ui.Button):
             await _send_sleep_block(interaction, self.config)
             return
 
-        remaining = self.manager.check_cooldown("play")
-        if remaining > 0:
-            msg = self.config.get("tama_resp_cooldown", "⏳ Wait {time}.").replace(
-                "{time}", _discord_relative_time(remaining)
-            )
-            await interaction.response.send_message(msg, ephemeral=True)
-            return
-
         if not can_use_energy(self.config):
             await interaction.response.send_message(_no_energy_message(self.config), ephemeral=True)
             return
@@ -584,7 +576,7 @@ class GameSelectView(ui.View):
         if not can_use_energy(self.config):
             await interaction.response.send_message(_no_energy_message(self.config), ephemeral=True)
             return
-        remaining = self.manager.check_cooldown("play")
+        remaining = self.manager.check_cooldown("rps")
         if remaining > 0:
             msg = self.config.get("tama_resp_cooldown", "⏳ Wait {time}.").replace(
                 "{time}", _discord_relative_time(remaining)
@@ -601,7 +593,7 @@ class GameSelectView(ui.View):
         if should_auto_sleep(self.config):
             self.manager.begin_rest(interaction.channel_id)
             started_sleep = True
-        self.manager.set_cooldown("play", self.config.get("tama_cd_play", 60))
+        self.manager.set_cooldown("rps", self.config.get("tama_cd_rps", 60))
 
         bot_choice = random.choice(["rock", "paper", "scissors"])
         msg = self.config.get("tama_resp_play", "🎮 Let's play!")

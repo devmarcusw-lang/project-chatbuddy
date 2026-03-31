@@ -166,7 +166,7 @@ async def help_command(interaction: discord.Interaction):
             "`/set-tama-health` `/set-tama-energy` `/set-tama-dirt` "
             "`/set-tama-sickness` `/set-tama-rest` `/set-tama-low-energy-mood` `/set-tama-hatch-time` "
             "`/set-tama-hatch-prompt` `/set-tama-wake-prompt` `/set-tama-chatter` `/set-tama-chatter-prompt`\n"
-            "**Buttons:** `/set-tama-feed` `/set-tama-drink` `/set-tama-play` `/set-rps-rewards` "
+            "**Buttons:** `/set-tama-feed` `/set-tama-drink` `/set-tama-play` `/set-rps-rewards` `/set-rps-cooldown` "
             "`/set-tama-lucky-gift` `/set-tama-medicate` `/set-tama-clean`\n"
             "**Inventory:** `/add-tama-item` `/show-tama-items` `/remove-tama-item`\n"
             "**Responses:** `/set-resp-food` `/set-resp-drink` `/set-resp-play` "
