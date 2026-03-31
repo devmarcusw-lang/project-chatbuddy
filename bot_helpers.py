@@ -47,8 +47,12 @@ async def read_soc_context(bot_ref, config: dict) -> str:
         return ""
 
     soc_messages = []
-    async for msg in soc_channel.history(limit=soc_count):
-        soc_messages.append(msg)
+    try:
+        async for msg in soc_channel.history(limit=soc_count):
+            soc_messages.append(msg)
+    except Exception as e:
+        print(f"[SoC] Failed to read context history: {e}")
+        return ""
     soc_messages.reverse()
 
     ce_idx = None
@@ -78,10 +82,13 @@ async def handle_soc_extraction(response_text: str, bot_ref, config: dict) -> st
     soc_channel_id = config.get("soc_channel_id")
     clean_text, thoughts_text = extract_thoughts(response_text)
     if thoughts_text and soc_enabled and soc_channel_id:
-        thought_channel = await resolve_channel(bot_ref, soc_channel_id)
-        if thought_channel is not None:
-            for chunk in chunk_message(thoughts_text):
-                await thought_channel.send(chunk)
+        try:
+            thought_channel = await resolve_channel(bot_ref, soc_channel_id)
+            if thought_channel is not None:
+                for chunk in chunk_message(thoughts_text):
+                    await thought_channel.send(chunk)
+        except Exception as e:
+            print(f"[SoC] Failed to post extracted thoughts: {e}")
     return clean_text
 
 
@@ -100,8 +107,13 @@ async def send_soul_logs(bot_ref, config: dict, soul_logs: list[str]) -> None:
         return
 
     joined_logs = "\n".join(log for log in soul_logs if log)
+    prefix = "**Soul Updates:**\n"
     for log_chunk in chunk_message(joined_logs, limit=1900):
-        await soul_channel.send(f"**🧠 Soul Updates:**\n{log_chunk}")
+        try:
+            await soul_channel.send(f"{prefix}{log_chunk}")
+        except Exception as e:
+            print(f"[Soul] Failed to send soul logs: {e}")
+            return
 
 
 def build_tama_view(bot_config: dict, tama_manager) -> TamagotchiView | None:

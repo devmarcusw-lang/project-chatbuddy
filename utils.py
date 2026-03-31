@@ -93,8 +93,11 @@ async def collect_context_entries(
 ) -> List[Union[discord.Message, ContextEntry]]:
     fetch_limit = max(limit * 4, 120, 1)
     messages: List[discord.Message] = []
-    async for msg in channel.history(limit=fetch_limit, before=before):
-        messages.append(msg)
+    try:
+        async for msg in channel.history(limit=fetch_limit, before=before):
+            messages.append(msg)
+    except Exception as e:
+        print(f"[Context] Failed to read channel history: {e}")
     messages.reverse()
     if len(messages) > limit:
         messages = messages[-limit:]

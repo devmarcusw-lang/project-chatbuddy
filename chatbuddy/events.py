@@ -105,7 +105,11 @@ async def _run_backend_setup(
         )
         return
 
-    await interaction.response.defer(ephemeral=True)
+    try:
+        await interaction.response.defer(ephemeral=True)
+    except discord.NotFound:
+        print("[ChatBuddy] setup interaction expired before it could be deferred.")
+        return
     try:
         allowed_channels = dict(bot_config.get("allowed_channels", {}))
         allowed_channels[str(SETUP_MAIN_CHAT_CHANNEL)] = True
@@ -137,6 +141,7 @@ async def _run_backend_setup(
         bot_config["heartbeat_enabled"] = False
         bot_config["auto_chat_enabled"] = False
         bot_config["bot_owner_id"] = _configured_owner_id()
+        bot_config["reminders_enabled"] = True
         bot_config["reminders_channel_id"] = str(SETUP_MAIN_CHAT_CHANNEL)
         bot_config["main_chat_channel_id"] = str(SETUP_MAIN_CHAT_CHANNEL)
 
