@@ -39,7 +39,7 @@ MSG_GENERIC_ERROR = "⚠️ Something went wrong while generating a response. Pl
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _build_current_time_context() -> str:
+def _build_current_time_context(config: dict | None = None) -> str:
     """Return a compact local-time header for the top of the system prompt."""
     now = datetime.now().astimezone()
     tz_name = now.tzname() or "local"
@@ -49,19 +49,31 @@ def _build_current_time_context() -> str:
     else:
         utc_offset = "UTC unknown"
 
-    return (
+    lines = [
         "[CURRENT TIME CONTEXT]\n"
         f"Local datetime: {now.strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"Weekday: {now.strftime('%A')}\n"
         f"Timezone: {tz_name} ({utc_offset})\n"
         "Use this as the current reference point when interpreting relative time in chat history "
         "and user messages (for example: today, yesterday, tomorrow, later, earlier, in 2 hours)."
-    )
+    ]
+
+    birth_at = float((config or {}).get("tama_birth_at", 0.0) or 0.0)
+    if birth_at > 0.0:
+        birth_dt = datetime.fromtimestamp(birth_at, tz=dt_module.timezone.utc).astimezone(now.tzinfo)
+        lines.append(
+            "\n[BIRTHDAY CONTEXT]\n"
+            f"Your birthday (the exact time you hatched) is {birth_dt.strftime('%Y-%m-%d %H:%M:%S')}.\n"
+            f"Birthday weekday: {birth_dt.strftime('%A')}.\n"
+            f"Birthday timezone: {tz_name} ({utc_offset})."
+        )
+
+    return "".join(lines)
 
 
-def _prepend_time_context(system_prompt: str) -> str:
+def _prepend_time_context(system_prompt: str, config: dict | None = None) -> str:
     """Ensure the prompt always starts with an explicit current-time anchor."""
-    time_context = _build_current_time_context()
+    time_context = _build_current_time_context(config)
     return f"{time_context}\n\n{system_prompt}".strip() if system_prompt else time_context
 
 
@@ -120,10 +132,10 @@ def build_system_prompt(config: dict, *, include_word_game: bool = True) -> str:
             "[REMINDERS & AUTO-WAKE — Your scheduled event system.\n"
             "IMPORTANT: Use EXACTLY this date format: dd-mm-yy HH:MM (24-hour clock).\n"
             "Example: 20-03-26 22:30 means 20th March 2026 at 22:30.\n\n"
-            "To schedule a new reminder, output: <!add-reminder : [dd-mm-yy HH:MM] [prompt]>\n"
-            "To cancel an existing reminder, output: <!delete-reminder : [dd-mm-yy HH:MM] [prompt]>\n"
-            "To schedule a self-wake, output: <!add-auto-wake-time : [dd-mm-yy HH:MM] [self-prompt]>\n"
-            "To cancel a self-wake, output: <!delete-auto-wake-time : [dd-mm-yy HH:MM] [self-prompt]>\n"
+            "To schedule a new reminder, output: <!add-reminder : [dd-mm-yy HH:MM] [prompt]!>\n"
+            "To cancel an existing reminder, output: <!delete-reminder : [dd-mm-yy HH:MM] [prompt]!>\n"
+            "To schedule a self-wake, output: <!add-auto-wake-time : [dd-mm-yy HH:MM] [self-prompt]!>\n"
+            "To cancel a self-wake, output: <!delete-auto-wake-time : [dd-mm-yy HH:MM] [self-prompt]!>\n"
             "These tags are automatically hidden from users and logged for transparency.\n"
             "When a reminder fires, its prompt is sent to you as input.]"
         )
@@ -329,7 +341,7 @@ async def generate(
     if revival_system_instruct:
         system_prompt = (system_prompt + "\n\n" + revival_system_instruct).strip()
 
-    system_prompt = _prepend_time_context(system_prompt)
+    system_prompt = _prepend_time_context(system_prompt, config)
 
     # ── Step 1: text inference via REST generateContent ────────────────────
     # Custom mode with Gemma-style injection when using non-Google APIs

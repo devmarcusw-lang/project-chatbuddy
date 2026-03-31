@@ -196,6 +196,8 @@ Wrap hidden thoughts in `<my-thoughts>` tags in the system prompt and the bot wi
 | `/delete-reminder` | Delete a reminder by name |
 | `/show-reminders` | Show current reminders and auto-wake times |
 
+Bot-managed reminder tags now use the safer `<! ... !>` form, for example `<!add-reminder : [31-03-26 14:00] [check mail]!>`.
+
 ### Bot-to-Bot Response
 
 | Command | Description |
@@ -208,6 +210,7 @@ Wrap hidden thoughts in `<my-thoughts>` tags in the system prompt and the bot wi
 | Command | Description |
 |---|---|
 | `/set-heartbeat` | Configure and enable periodic heartbeat posting |
+| `/set-heartbeat-rest` | Configure the daily heartbeat quiet window |
 
 ### Tamagotchi
 
@@ -240,7 +243,7 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 |---|---|
 | `/set-tama-feed` | Set hunger restored and cooldown for Feed |
 | `/set-tama-drink` | Set thirst restored and cooldown for Drink |
-| `/add-tama-item` | Add or update a Tamagotchi inventory item, including fill multiplier, energy multiplier, stock, emoji, button color, happiness amount, and Lucky Gift pool membership |
+| `/add-tama-item` | Add or update a Tamagotchi inventory item, including fill multiplier, energy multiplier, direct energy amount, stock, emoji, button color, happiness amount, and Lucky Gift pool membership |
 | `/show-tama-items` | Show all configured Tamagotchi inventory items and current stock |
 | `/remove-tama-item` | Remove a Tamagotchi inventory item |
 | `/set-tama-play` | Set happiness gain and cooldown for Play |
@@ -284,8 +287,8 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 6. Inventory, Chatter, and Play are always attached to public Tamagotchi messages. Medicate appears while the bot is sick or missing health, and Clean only appears while dirty.
 7. Pressing Play now opens a user-only game menu with one button per game.
 8. Rock-Paper-Scissors remains available from that menu. Intermediate choices stay private to the player; the final result is public.
-9. Lucky Gift is also available from the game menu. It has its own configurable cooldown and reveal timer, shows a live countdown, and then awards a random configured prize from the Lucky Gift pool.
-10. Food, drink, and misc items are consumed from the user-only inventory menu. Each inventory item has its own emoji, button color, stock amount, fill multiplier, energy multiplier, and optional happiness value.
+9. Lucky Gift is also available from the game menu. It has its own configurable cooldown and reveal timer, shows a live countdown, and then awards a random configured prize from the Lucky Gift pool, including configurable misc rewards like a battery that restores energy.
+10. Food, drink, and misc items are consumed from the user-only inventory menu. Each inventory item has its own emoji, button color, stock amount, fill multiplier, energy multiplier, optional direct energy value, and optional happiness value.
 11. Misc items use their own configurable cooldown so things like teddy bears can be used without sharing the food or drink timers.
 12. Feed and Drink effects still share the existing global food and drink cooldowns. Hunger and thirst no longer drain per turn; they drain only when energy is spent.
 13. Rock-Paper-Scissors no longer applies its own hunger or thirst loss. Only energy is spent, and hunger/thirst follow from that energy loss.

@@ -1,9 +1,9 @@
-﻿"""Shared stat and state helpers for the Tamagotchi feature."""
+"""Shared stat and state helpers for the Tamagotchi feature."""
+
+from datetime import datetime, timezone
 
 from .common import *
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# Helpers
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
 
 def _fs(val: float) -> str:
     """Format a stat value: integer if whole, else up to 2 decimals."""
@@ -27,6 +27,14 @@ def _discord_relative_time(seconds: float) -> str:
 
 def _discord_relative_epoch(epoch: float) -> str:
     return f"<t:{max(0, int(epoch))}:R>"
+
+
+def _actor_display_name(user) -> str:
+    display_name = str(getattr(user, "display_name", "") or getattr(user, "name", "")).strip()
+    if display_name:
+        return display_name
+    user_id = getattr(user, "id", "")
+    return f"User {user_id}" if user_id else "Someone"
 
 
 def _bot_display_name(interaction: discord.Interaction) -> str:
@@ -100,6 +108,31 @@ def _apply_item_emoji_to_response(message: str, item: dict) -> str:
     return f"{chosen_emoji} {message}".strip()
 
 
+def render_tamagotchi_action_message(
+    message: str,
+    *,
+    actor_name: str,
+    action_summary: str,
+    bot_name: str = "",
+    item_name: str = "",
+    item_emoji: str = "",
+) -> str:
+    """Inject actor-aware context into public Tamagotchi action messages."""
+    rendered = (
+        (message or "").strip()
+        .replace("{user}", actor_name)
+        .replace("{user_name}", actor_name)
+        .replace("{actor}", actor_name)
+        .replace("{bot}", bot_name)
+        .replace("{item_name}", item_name)
+        .replace("{item_emoji}", item_emoji)
+    ).strip()
+    if actor_name and actor_name not in rendered:
+        prefix = f"**{actor_name}** {action_summary}."
+        return f"{prefix}\n{rendered}".strip() if rendered else prefix
+    return rendered
+
+
 def is_sleeping(config: dict) -> bool:
     """Return True while the rest timer is active."""
     sleep_until = float(config.get("tama_sleep_until", 0.0) or 0.0)
@@ -123,6 +156,13 @@ def build_sleeping_message(config: dict) -> str:
 
 def build_awake_message(config: dict) -> str:
     return "✨ I'm awake again!"
+
+
+def get_birth_datetime(config: dict) -> datetime | None:
+    birth_at = float(config.get("tama_birth_at", 0.0) or 0.0)
+    if birth_at <= 0.0:
+        return None
+    return datetime.fromtimestamp(birth_at, tz=timezone.utc).astimezone()
 
 
 def is_hatching(config: dict) -> bool:
@@ -149,6 +189,16 @@ def energy_ratio(config: dict) -> float:
         return 0.0
     current = float(config.get("tama_energy", 0.0) or 0.0)
     return max(0.0, min(1.0, current / maximum))
+
+
+def apply_direct_energy_delta(config: dict, delta: float) -> float:
+    current = float(config.get("tama_energy", 0.0) or 0.0)
+    maximum = float(config.get("tama_energy_max", 100.0) or 100.0)
+    new_value = min(maximum, max(0.0, round(current + float(delta or 0.0), 2)))
+    applied = round(new_value - current, 2)
+    if applied:
+        config["tama_energy"] = new_value
+    return applied
 
 
 def should_auto_sleep(config: dict) -> bool:
@@ -227,6 +277,7 @@ def reset_tamagotchi_state(config: dict) -> None:
     config["tama_sick"] = False
     config["tama_sleeping"] = False
     config["tama_sleep_until"] = 0.0
+    config["tama_birth_at"] = 0.0
     config["tama_last_interaction_at"] = now
     config["tama_lonely_last_update_at"] = now
 
@@ -285,5 +336,5 @@ def apply_need_depletion_from_energy(config: dict, energy_loss: float) -> None:
         round(float(config.get("tama_thirst", 0.0) or 0.0) - thirst_loss, 2),
     )
 
-__all__ = [name for name in globals() if not name.startswith("__")]
 
+__all__ = [name for name in globals() if not name.startswith("__")]

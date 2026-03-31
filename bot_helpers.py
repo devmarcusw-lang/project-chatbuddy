@@ -143,6 +143,9 @@ def format_tama_item_summary(item: dict) -> str:
         f"fill x{item.get('multiplier', 1.0)}, energy x{item.get('energy_multiplier', 1.0)}, "
         f"{stock}, {color_name} button"
     ]
+    energy_delta = float(item.get("energy_delta", 0.0) or 0.0)
+    if energy_delta:
+        parts.append(f"energy {energy_delta:+g}")
     happiness_delta = float(item.get("happiness_delta", 0.0) or 0.0)
     if happiness_delta:
         parts.append(f"happiness {happiness_delta:+g}")

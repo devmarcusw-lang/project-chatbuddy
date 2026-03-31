@@ -82,6 +82,9 @@ DEFAULTS = {
     "heartbeat_interval_minutes": 60,
     "heartbeat_channel_id": None,
     "heartbeat_prompt": "",
+    "heartbeat_rest_enabled": True,
+    "heartbeat_rest_start_time": "00:00",
+    "heartbeat_rest_duration_minutes": 480,
     # â”€â”€ Tamagotchi (unified gamified system) â”€â”€
     "tama_enabled": False,
     "tama_stat_scale_version": 2,
@@ -126,6 +129,7 @@ DEFAULTS = {
     "tama_hatch_until": 0.0,
     "tama_hatch_channel_id": "",
     "tama_hatch_message_id": "",
+    "tama_birth_at": 0.0,
     "tama_egg_hatch_time": 30,
     "tama_hatch_prompt": (
         "You have just hatched in this Discord server. Your life has begun right now. "

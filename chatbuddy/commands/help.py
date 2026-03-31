@@ -133,8 +133,8 @@ async def help_command(interaction: discord.Interaction):
             "`/add-reminder` - Add a named reminder\n"
             "`/delete-reminder` - Delete a reminder by name\n"
             "`/show-reminders` - Show scheduled reminders and wake-times\n\n"
-            "The bot can also self-manage with `<!add-reminder>`, `<!delete-reminder>`, "
-            "`<!add-auto-wake-time>`, and `<!delete-auto-wake-time>` tags."
+            "The bot can also self-manage with `<!add-reminder ... !>`, `<!delete-reminder ... !>`, "
+            "`<!add-auto-wake-time ... !>`, and `<!delete-auto-wake-time ... !>` tags."
         ),
         inline=False,
     )
@@ -152,7 +152,8 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(
         name="Heartbeat",
         value=(
-            "`/set-heartbeat` - Configure periodic heartbeat posting\n\n"
+            "`/set-heartbeat` - Configure periodic heartbeat posting\n"
+            "`/set-heartbeat-rest` - Configure daily heartbeat quiet hours\n\n"
             "Separate from auto-chat and unaffected by idle timers."
         ),
         inline=False,

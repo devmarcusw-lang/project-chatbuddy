@@ -522,6 +522,7 @@ class TamagotchiManager:
         channel_id = self._resolve_main_channel_id(self.config.get("tama_hatch_channel_id"))
         channel = await self._resolve_channel(channel_id)
         message_id = str(self.config.get("tama_hatch_message_id", "") or "").strip()
+        self.config["tama_birth_at"] = time.time()
         self._clear_hatch_state()
         save_config(self.config)
         if self.config.get("tama_enabled", False):

@@ -1,9 +1,9 @@
-﻿"""Bot response and heartbeat control commands."""
+"""Bot response and heartbeat control commands."""
+
+from heartbeat import normalize_heartbeat_rest_time
 
 from ..common import *
-# ---------------------------------------------------------------------------
-# Slash commands â€” Bot-to-bot response control
-# ---------------------------------------------------------------------------
+
 
 @bot.tree.command(name="set-respond-to-bot", description="Enable or disable responding to other bots")
 @app_commands.describe(enabled="True to respond to bots, False to ignore them")
@@ -35,10 +35,6 @@ async def set_respond_bot_limit(interaction: discord.Interaction, limit: int):
     )
 
 
-# ---------------------------------------------------------------------------
-# Slash commands â€” Heartbeat
-# ---------------------------------------------------------------------------
-
 @bot.tree.command(name="set-heartbeat", description="Configure periodic heartbeat messages")
 @app_commands.describe(
     enabled="True to enable, False to disable",
@@ -60,7 +56,63 @@ async def set_heartbeat_cmd(
     bot_config["heartbeat_prompt"] = prompt
     save_config(bot_config)
 
-    # Restart the heartbeat manager with new settings
+    if heartbeat_manager:
+        heartbeat_manager.stop()
+    heartbeat_manager.set(HeartbeatManager(bot, bot_config))
+    heartbeat_manager.start()
+
+    state = "enabled" if enabled else "disabled"
+    rest_enabled = bot_config.get("heartbeat_rest_enabled", True)
+    rest_label = (
+        f"quiet hours **{bot_config.get('heartbeat_rest_start_time', '00:00')}** for "
+        f"**{bot_config.get('heartbeat_rest_duration_minutes', 480)}m**"
+        if rest_enabled
+        else "quiet hours disabled"
+    )
+    await interaction.response.send_message(
+        f"✅ Heartbeat **{state}** - every **{max(1, interval)}min** in {channel.mention}, {rest_label}.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(name="set-heartbeat-rest", description="Configure the daily heartbeat quiet window")
+@app_commands.describe(
+    enabled="True to pause heartbeat during the quiet window",
+    start_time="Daily local start time in HH:MM (24-hour clock)",
+    duration_minutes="How long the quiet window lasts in minutes",
+)
+@app_commands.default_permissions(administrator=True)
+async def set_heartbeat_rest_cmd(
+    interaction: discord.Interaction,
+    enabled: bool,
+    start_time: str = "00:00",
+    duration_minutes: int = 480,
+):
+    normalized_start = normalize_heartbeat_rest_time(start_time)
+    if normalized_start is None:
+        await interaction.response.send_message(
+            "❌ Start time must use HH:MM in 24-hour format, for example `00:00` or `23:30`.",
+            ephemeral=True,
+        )
+        return
+    if duration_minutes < 0:
+        await interaction.response.send_message(
+            "❌ Duration must be 0 or greater.",
+            ephemeral=True,
+        )
+        return
+    if enabled and duration_minutes < 1:
+        await interaction.response.send_message(
+            "❌ Enabled quiet hours must last at least 1 minute.",
+            ephemeral=True,
+        )
+        return
+
+    bot_config["heartbeat_rest_enabled"] = enabled
+    bot_config["heartbeat_rest_start_time"] = normalized_start
+    bot_config["heartbeat_rest_duration_minutes"] = duration_minutes
+    save_config(bot_config)
+
     if heartbeat_manager:
         heartbeat_manager.stop()
     heartbeat_manager.set(HeartbeatManager(bot, bot_config))
@@ -68,10 +120,6 @@ async def set_heartbeat_cmd(
 
     state = "enabled" if enabled else "disabled"
     await interaction.response.send_message(
-        f"✅ Heartbeat **{state}** — every **{max(1, interval)}min** in {channel.mention}.",
+        f"✅ Heartbeat quiet hours **{state}** - start **{normalized_start}**, duration **{duration_minutes}m**.",
         ephemeral=True,
     )
-
-
-
-
