@@ -131,7 +131,6 @@ class TamagotchiManager:
     async def _lonely_loop(self):
         try:
             while True:
-                interval = max(1.0, float(self.config.get("tama_happiness_depletion_interval", 600) or 600))
                 last_update = max(
                     float(self.config.get("tama_last_interaction_at", 0.0) or 0.0),
                     float(self.config.get("tama_lonely_last_update_at", 0.0) or 0.0),
@@ -141,7 +140,11 @@ class TamagotchiManager:
                     self.config["tama_last_interaction_at"] = last_update
                     self.config["tama_lonely_last_update_at"] = last_update
                     save_config(self.config)
-                sleep_for = max(1.0, interval - max(0.0, time.time() - last_update))
+                next_due_at = loneliness_next_due_at(self.config)
+                if next_due_at == float("inf"):
+                    await asyncio.sleep(60)
+                    continue
+                sleep_for = max(1.0, next_due_at - time.time())
                 await asyncio.sleep(sleep_for)
                 apply_loneliness(self.config, save=True)
         except asyncio.CancelledError:

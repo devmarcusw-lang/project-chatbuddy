@@ -187,22 +187,52 @@ async def remove_tama_item(interaction: discord.Interaction, name_or_id: str):
 
 @bot.tree.command(name="set-tama-play", description="Configure the play button")
 @app_commands.describe(
-    happiness="Happiness gained per play",
+    base_happiness="Base happiness gained when a play session starts",
     cooldown="Cooldown in seconds",
 )
 @app_commands.default_permissions(administrator=True)
 async def set_tama_play(
     interaction: discord.Interaction,
-    happiness: float, cooldown: int,
+    base_happiness: float, cooldown: int,
 ):
     if cooldown < 0:
         await interaction.response.send_message("⚠️ Cooldown must be ≥ 0.", ephemeral=True)
         return
-    bot_config["tama_play_happiness"] = happiness
+    if base_happiness < 0:
+        await interaction.response.send_message("⚠️ Base happiness must be ≥ 0.", ephemeral=True)
+        return
+    bot_config["tama_play_happiness"] = round(base_happiness, 2)
     bot_config["tama_cd_play"] = cooldown
     save_config(bot_config)
     await interaction.response.send_message(
-        f"✅ Play: +**{happiness}** happiness, **{cooldown}s** cooldown. Hunger and thirst now drain only from energy use.",
+        f"✅ Play: base +**{base_happiness:g}** happiness per session, **{cooldown}s** cooldown. "
+        "RPS outcome rewards are configured separately with `/set-rps-rewards`.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(name="set-rps-rewards", description="Configure Rock-Paper-Scissors happiness rewards")
+@app_commands.describe(
+    user_wins="Happiness gained when the user wins and the bot loses",
+    draw="Happiness gained when the round ends in a draw",
+    bot_wins="Happiness gained when the bot wins and the user loses",
+)
+@app_commands.default_permissions(administrator=True)
+async def set_rps_rewards(
+    interaction: discord.Interaction,
+    user_wins: float,
+    draw: float,
+    bot_wins: float,
+):
+    if user_wins < 0 or draw < 0 or bot_wins < 0:
+        await interaction.response.send_message("⚠️ RPS rewards must be ≥ 0.", ephemeral=True)
+        return
+    bot_config["tama_rps_reward_user_win"] = round(user_wins, 2)
+    bot_config["tama_rps_reward_draw"] = round(draw, 2)
+    bot_config["tama_rps_reward_bot_win"] = round(bot_wins, 2)
+    save_config(bot_config)
+    await interaction.response.send_message(
+        f"✅ RPS rewards: user win +**{user_wins:g}**, draw +**{draw:g}**, bot win +**{bot_wins:g}** happiness.",
         ephemeral=True,
     )
 

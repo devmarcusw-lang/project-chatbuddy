@@ -171,7 +171,10 @@ DEFAULTS = {
     "tama_drink_energy_every": 1,
     "tama_drink_energy_gain": 1.0,
     "tama_drink_energy_counter": 0,
-    "tama_play_happiness": 10.0,
+    "tama_play_happiness": 0.0,
+    "tama_rps_reward_user_win": 5.0,
+    "tama_rps_reward_draw": 10.0,
+    "tama_rps_reward_bot_win": 20.0,
     "tama_lucky_gift_duration": 30,
     "tama_cd_lucky_gift": 600,
     "tama_medicate_health_heal": 20.0,
@@ -260,7 +263,7 @@ def _migrate_tamagotchi_scale(config: dict, stored: dict | None = None) -> bool:
     config["tama_feed_energy_gain"] = _scaled_whole_number(config.get("tama_feed_energy_gain", 0.1), minimum=1.0)
     config["tama_drink_amount"] = _scaled_whole_number(config.get("tama_drink_amount", 1.0), minimum=1.0)
     config["tama_drink_energy_gain"] = _scaled_whole_number(config.get("tama_drink_energy_gain", 0.05), minimum=1.0)
-    config["tama_play_happiness"] = _scaled_whole_number(config.get("tama_play_happiness", 1.0), minimum=1.0)
+    config["tama_play_happiness"] = _scaled_whole_number(config.get("tama_play_happiness", 1.0), minimum=0.0)
     config["tama_medicate_health_heal"] = _scaled_whole_number(config.get("tama_medicate_health_heal", 2.0), minimum=1.0)
     config["tama_medicate_happiness_cost"] = _scaled_whole_number(config.get("tama_medicate_happiness_cost", 0.3), minimum=1.0)
 
@@ -294,24 +297,38 @@ def _migrate_tamagotchi_default_tuning(config: dict, stored: dict | None = None)
         config["tama_resp_poop"] = "oops i pooped 💩"
         changed = True
 
-    if "tama_thirst_depletion" not in stored:
-        return changed
+    if "tama_thirst_depletion" in stored:
+        try:
+            stored_thirst = float(stored.get("tama_thirst_depletion", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            stored_thirst = None
+        if stored_thirst == 1.0:
+            config["tama_thirst_depletion"] = 2.0
+            changed = True
 
-    try:
-        stored_thirst = float(stored.get("tama_thirst_depletion", 0.0) or 0.0)
-    except (TypeError, ValueError):
-        stored_thirst = None
-    if stored_thirst == 1.0:
-        config["tama_thirst_depletion"] = 2.0
-        changed = True
+        try:
+            stored_drink_cd = int(stored.get("tama_cd_drink", 0) or 0)
+        except (TypeError, ValueError):
+            stored_drink_cd = None
+        if stored_drink_cd == 60:
+            config["tama_cd_drink"] = 30
+            changed = True
 
-    try:
-        stored_drink_cd = int(stored.get("tama_cd_drink", 0) or 0)
-    except (TypeError, ValueError):
-        stored_drink_cd = None
-    if stored_drink_cd == 60:
-        config["tama_cd_drink"] = 30
-        changed = True
+    if all(
+        key not in stored
+        for key in (
+            "tama_rps_reward_user_win",
+            "tama_rps_reward_draw",
+            "tama_rps_reward_bot_win",
+        )
+    ):
+        try:
+            stored_play_happiness = float(stored.get("tama_play_happiness", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            stored_play_happiness = None
+        if stored_play_happiness == 10.0:
+            config["tama_play_happiness"] = 0.0
+            changed = True
 
     return changed
 

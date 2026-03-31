@@ -1,6 +1,6 @@
 """Shared stat and state helpers for the Tamagotchi feature."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .common import *
 
@@ -201,6 +201,165 @@ def apply_direct_energy_delta(config: dict, delta: float) -> float:
     return applied
 
 
+def apply_direct_happiness_delta(config: dict, delta: float) -> float:
+    current = float(config.get("tama_happiness", 0.0) or 0.0)
+    maximum = float(config.get("tama_happiness_max", 100.0) or 100.0)
+    new_value = min(maximum, max(0.0, round(current + float(delta or 0.0), 2)))
+    applied = round(new_value - current, 2)
+    if applied:
+        config["tama_happiness"] = new_value
+    return applied
+
+
+RPS_REWARD_KEYS = {
+    "user_win": "tama_rps_reward_user_win",
+    "draw": "tama_rps_reward_draw",
+    "bot_win": "tama_rps_reward_bot_win",
+}
+
+
+def resolve_rps_outcome(user_choice: str, bot_choice: str) -> str:
+    if user_choice == bot_choice:
+        return "draw"
+    if (
+        (user_choice == "rock" and bot_choice == "scissors")
+        or (user_choice == "paper" and bot_choice == "rock")
+        or (user_choice == "scissors" and bot_choice == "paper")
+    ):
+        return "user_win"
+    return "bot_win"
+
+
+def apply_rps_happiness_reward(config: dict, outcome: str) -> float:
+    reward_key = RPS_REWARD_KEYS.get(outcome)
+    if not reward_key:
+        return 0.0
+    return apply_direct_happiness_delta(config, float(config.get(reward_key, 0.0) or 0.0))
+
+
+def _heartbeat_rest_schedule(config: dict) -> tuple[int, int, int] | None:
+    try:
+        from heartbeat import normalize_heartbeat_rest_time
+    except Exception:
+        return None
+
+    if not config.get("heartbeat_rest_enabled", True):
+        return None
+
+    duration_minutes = int(config.get("heartbeat_rest_duration_minutes", 480) or 0)
+    if duration_minutes <= 0:
+        return None
+
+    normalized = normalize_heartbeat_rest_time(config.get("heartbeat_rest_start_time", "00:00"))
+    if normalized is None:
+        return None
+
+    hour, minute = map(int, normalized.split(":"))
+    return hour, minute, duration_minutes
+
+
+def _heartbeat_rest_next_transition(
+    config: dict,
+    timestamp: float,
+) -> tuple[float, bool]:
+    schedule = _heartbeat_rest_schedule(config)
+    if schedule is None:
+        return float("inf"), False
+
+    hour, minute, duration_minutes = schedule
+    if duration_minutes >= 24 * 60:
+        return float("inf"), True
+
+    current_local = datetime.fromtimestamp(timestamp).astimezone()
+    window = timedelta(minutes=duration_minutes)
+    today_start = current_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    active_windows = [
+        (today_start - timedelta(days=1), today_start - timedelta(days=1) + window),
+        (today_start, today_start + window),
+        (today_start + timedelta(days=1), today_start + timedelta(days=1) + window),
+    ]
+    for start, end in active_windows:
+        if start <= current_local < end:
+            return end.timestamp(), True
+
+    next_start = min(start for start, _ in active_windows if start > current_local)
+    return next_start.timestamp(), False
+
+
+def _active_seconds_since(config: dict, start_ts: float, end_ts: float) -> float:
+    if end_ts <= start_ts:
+        return 0.0
+
+    schedule = _heartbeat_rest_schedule(config)
+    if schedule is None:
+        return max(0.0, end_ts - start_ts)
+
+    _, _, duration_minutes = schedule
+    if duration_minutes >= 24 * 60:
+        return 0.0
+
+    active_seconds = 0.0
+    cursor = float(start_ts)
+    target = float(end_ts)
+    while cursor < target:
+        transition_ts, in_rest = _heartbeat_rest_next_transition(config, cursor)
+        if in_rest:
+            if transition_ts == float("inf"):
+                break
+            cursor = min(target, transition_ts)
+            continue
+
+        segment_end = min(target, transition_ts)
+        active_seconds += max(0.0, segment_end - cursor)
+        cursor = segment_end
+
+    return active_seconds
+
+
+def _advance_by_active_seconds(config: dict, start_ts: float, active_seconds: float) -> float:
+    if active_seconds <= 0.0:
+        return float(start_ts)
+
+    schedule = _heartbeat_rest_schedule(config)
+    if schedule is None:
+        return float(start_ts) + float(active_seconds)
+
+    _, _, duration_minutes = schedule
+    if duration_minutes >= 24 * 60:
+        return float("inf")
+
+    remaining = float(active_seconds)
+    cursor = float(start_ts)
+    while remaining > 0.0:
+        transition_ts, in_rest = _heartbeat_rest_next_transition(config, cursor)
+        if in_rest:
+            if transition_ts == float("inf"):
+                return float("inf")
+            cursor = transition_ts
+            continue
+
+        available = transition_ts - cursor
+        if transition_ts == float("inf") or remaining <= available:
+            return cursor + remaining
+
+        remaining -= available
+        cursor = transition_ts
+
+    return cursor
+
+
+def loneliness_next_due_at(config: dict) -> float:
+    interval = max(1.0, float(config.get("tama_happiness_depletion_interval", 600) or 600))
+    base = max(
+        float(config.get("tama_last_interaction_at", 0.0) or 0.0),
+        float(config.get("tama_lonely_last_update_at", 0.0) or 0.0),
+    )
+    if base <= 0.0:
+        return time.time() + interval
+    return _advance_by_active_seconds(config, base, interval)
+
+
 def should_auto_sleep(config: dict) -> bool:
     return (
         config.get("tama_enabled", False)
@@ -300,7 +459,8 @@ def apply_loneliness(config: dict, *, now: float | None = None, save: bool = Fal
             save_config(config)
         return 0.0
 
-    steps = int(max(0.0, now - base) // interval)
+    active_elapsed = _active_seconds_since(config, base, now)
+    steps = int(max(0.0, active_elapsed) // interval)
     if steps <= 0 or amount <= 0.0:
         return 0.0
 
@@ -309,7 +469,7 @@ def apply_loneliness(config: dict, *, now: float | None = None, save: bool = Fal
         0.0,
         round(float(config.get("tama_happiness", 0.0) or 0.0) - loss, 2),
     )
-    config["tama_lonely_last_update_at"] = base + (steps * interval)
+    config["tama_lonely_last_update_at"] = _advance_by_active_seconds(config, base, steps * interval)
     if save:
         save_config(config)
     return loss

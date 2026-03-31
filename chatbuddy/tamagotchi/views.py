@@ -592,11 +592,9 @@ class GameSelectView(ui.View):
             await interaction.response.send_message(msg, ephemeral=True)
             return
 
-        happy_gain = self.config.get("tama_play_happiness", 1.0)
-        max_happy = self.config.get("tama_happiness_max", 100)
-        self.config["tama_happiness"] = min(
-            float(max_happy), round(self.config.get("tama_happiness", 0) + happy_gain, 2)
-        )
+        happy_gain = float(self.config.get("tama_play_happiness", 0.0) or 0.0)
+        if happy_gain:
+            apply_direct_happiness_delta(self.config, happy_gain)
 
         deplete_energy_game(self.config)
         started_sleep = False
@@ -711,16 +709,17 @@ class RPSView(ui.View):
         user_emoji = _RPS_EMOJI.get(user_choice, "🎮")
         bot_emoji = _RPS_EMOJI.get(self.bot_choice, "🎮")
 
-        if user_choice == self.bot_choice:
+        outcome_key = resolve_rps_outcome(user_choice, self.bot_choice)
+        if outcome_key == "draw":
             outcome = "It's a draw."
-        elif (
-            (user_choice == "rock" and self.bot_choice == "scissors")
-            or (user_choice == "paper" and self.bot_choice == "rock")
-            or (user_choice == "scissors" and self.bot_choice == "paper")
-        ):
+        elif outcome_key == "user_win":
             outcome = f"**{user_name}** wins."
         else:
             outcome = f"**{bot_name}** wins."
+
+        happiness_delta = apply_rps_happiness_reward(self.config, outcome_key)
+        if happiness_delta:
+            save_config(self.config)
 
         public_result = (
             "🎮 **Rock, Paper, Scissors**\n"
@@ -728,6 +727,10 @@ class RPSView(ui.View):
             f"**{bot_name}** chose {bot_emoji} **{self.bot_choice.title()}**.\n"
             f"{outcome}"
         )
+        if happiness_delta > 0:
+            public_result += f"\n😊 Happiness +{_fs(happiness_delta)}."
+        elif happiness_delta < 0:
+            public_result += f"\n☹️ Happiness {_fs(happiness_delta)}."
 
         await interaction.response.edit_message(
             content=f"You picked {user_emoji} **{user_choice.title()}**. Result posted publicly.",

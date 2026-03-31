@@ -246,7 +246,8 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 | `/add-tama-item` | Add or update a Tamagotchi inventory item, including fill multiplier, energy multiplier, direct energy amount, stock, emoji, button color, happiness amount, and Lucky Gift pool membership |
 | `/show-tama-items` | Show all configured Tamagotchi inventory items and current stock |
 | `/remove-tama-item` | Remove a Tamagotchi inventory item |
-| `/set-tama-play` | Set happiness gain and cooldown for Play |
+| `/set-tama-play` | Set the base happiness gain and cooldown for starting Play |
+| `/set-rps-rewards` | Set the happiness gained when the user wins, on a draw, and when the bot wins |
 | `/set-tama-lucky-gift` | Set Lucky Gift cooldown, reveal countdown, and misc item cooldown |
 | `/set-tama-medicate` | Set cooldown, HP heal amount, and happiness cost for Medicate |
 | `/set-tama-clean` | Set cooldown for Clean |
@@ -286,7 +287,7 @@ The Tamagotchi system is fully script-driven. The LLM is informed of current sta
 5. Public bot messages use the compact quoted stat footer as the visible stat display. Happiness uses a dynamic emoji based on its current percent, and a skull icon appears whenever the bot is sick.
 6. Inventory, Chatter, and Play are always attached to public Tamagotchi messages. Medicate appears while the bot is sick or missing health, and Clean only appears while dirty.
 7. Pressing Play now opens a user-only game menu with one button per game.
-8. Rock-Paper-Scissors remains available from that menu. Intermediate choices stay private to the player; the final result is public.
+8. Rock-Paper-Scissors remains available from that menu. Intermediate choices stay private to the player; the final result is public, and the round awards configurable happiness based on whether the user wins, the round draws, or the bot wins.
 9. Lucky Gift is also available from the game menu. It has its own configurable cooldown and reveal timer, shows a live countdown, and then awards a random configured prize from the Lucky Gift pool, including configurable misc rewards like a battery that restores energy.
 10. Food, drink, and misc items are consumed from the user-only inventory menu. Each inventory item has its own emoji, button color, stock amount, fill multiplier, energy multiplier, optional direct energy value, and optional happiness value.
 11. Misc items use their own configurable cooldown so things like teddy bears can be used without sharing the food or drink timers.
