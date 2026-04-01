@@ -45,16 +45,34 @@ async def set_auto_chat_mode(
     )
 
 
-@bot.tree.command(name="set-auto-idle-message", description="Set the message posted when auto-chat enters idle mode")
-@app_commands.describe(message="The idle message (default: 'Going afk, ping me if you need me')")
+@bot.tree.command(name="set-auto-idle-message", description="Enable/disable and optionally set the auto-chat idle message")
+@app_commands.describe(
+    enabled="True = post the idle message, False = disable it",
+    message="Optional idle message text",
+)
 @app_commands.default_permissions(administrator=True)
-async def set_auto_idle_message(interaction: discord.Interaction, message: str):
-    message = message.replace("\\n", "\n")
-    bot_config["auto_chat_idle_message"] = message
+async def set_auto_idle_message(
+    interaction: discord.Interaction,
+    enabled: bool,
+    message: str | None = None,
+):
+    if message is not None:
+        message = message.replace("\\n", "\n")
+        bot_config["auto_chat_idle_message"] = message
+
+    bot_config["auto_chat_idle_message_enabled"] = enabled
     save_config(bot_config)
-    await interaction.response.send_message(
-        f"✅ Auto-chat idle message set to:\n```{message}```", ephemeral=True
+
+    current_message = bot_config.get(
+        "auto_chat_idle_message",
+        "Going afk, ping me if you need me",
     )
+    state = "enabled" if enabled else "disabled"
+    reply = f"✅ Auto-chat idle message {state}."
+    if enabled:
+        reply += f"\nCurrent message:\n```{current_message}```"
+
+    await interaction.response.send_message(reply, ephemeral=True)
 
 
 

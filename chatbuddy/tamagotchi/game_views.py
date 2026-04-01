@@ -118,7 +118,7 @@ class GameSelectView(ui.View):
             return False
         return True
 
-    @ui.button(label="RPS", emoji="✂️", style=discord.ButtonStyle.primary, row=0)
+    @ui.button(label="RPS", emoji="✂️", style=discord.ButtonStyle.secondary, row=0)
     async def rps_btn(self, interaction: discord.Interaction, button: ui.Button):
         self.manager.record_interaction()
         if self.manager.sleeping:
@@ -153,7 +153,7 @@ class GameSelectView(ui.View):
         if started_sleep:
             await self.manager.send_sleep_announcement(interaction.channel_id)
 
-    @ui.button(label="Lucky Gift", emoji="🎁", style=discord.ButtonStyle.success, row=0)
+    @ui.button(label="Lucky Gift", emoji="🎁", style=discord.ButtonStyle.secondary, row=0)
     async def lucky_gift_btn(self, interaction: discord.Interaction, button: ui.Button):
         self.manager.record_interaction()
         if self.manager.sleeping:

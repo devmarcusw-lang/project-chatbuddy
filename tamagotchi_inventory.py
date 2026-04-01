@@ -248,7 +248,7 @@ def get_inventory_item(config: dict, item_id: str) -> dict | None:
 
 
 def inventory_button_style(item: dict) -> discord.ButtonStyle:
-    return BUTTON_STYLE_BY_NAME.get(item.get("button_style", "secondary"), discord.ButtonStyle.secondary)
+    return discord.ButtonStyle.secondary
 
 
 def inventory_message_text(config: dict) -> str:

@@ -70,6 +70,7 @@ DEFAULTS = {
     "auto_chat_channel_id": None,
     "auto_chat_interval": 30,        # seconds between checks
     "auto_chat_idle_minutes": 10,    # idle timeout
+    "auto_chat_idle_message_enabled": False,
     "auto_chat_idle_message": "Going afk, ping me if you need me",
     # Reminders & auto-wake
     "reminders_enabled": False,

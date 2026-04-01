@@ -145,7 +145,7 @@ class AutoChatManager:
             if self._seconds_since_last_reply >= (idle_minutes * 60):
                 print(f"[AutoChat] Idle timeout reached ({idle_minutes}m). Entering idle mode.")
                 idle_msg = self.config.get("auto_chat_idle_message", "Going afk, ping me if you need me")
-                if idle_msg:
+                if self.config.get("auto_chat_idle_message_enabled", False) and idle_msg:
                     await channel.send(idle_msg)
                 self._idle = True
                 # Cancel the loop but keep _idle=True so reactivate() can detect it
