@@ -33,6 +33,8 @@ async def help_command(interaction: discord.Interaction):
             "`/set-api-endpoint-custom` - Set the endpoint for a custom model\n"
             "`/set-sys-instruct` - Set the main system prompt\n"
             "`/show-sys-instruct` - Display the full effective system prompt\n"
+            "`/set-botname` - Set the value used for `<!BOTNAME!>`\n"
+            "`/set-bot-personality` - Set the value used for `<!BOTPERSONALITY!>`\n"
             "`/set-model-mode` - Switch between `gemini`, `gemma`, and `custom`"
         ),
         inline=False,
@@ -58,20 +60,15 @@ async def help_command(interaction: discord.Interaction):
             "`/edit-soul-delete-entry` - Delete a given memory entry manually\n"
             "`/wipe-soul` - Wipe all memory entries immediately\n"
             "`/set-soul-channel` - Set the channel to log soul updates\n"
-            "*The bot can emit `<!soul-add-new>`, `<!soul-update>`, `<!soul-override>`, and `<!soul-delete>` tags.*"
+            "*The bot can emit `<!soul-add-new[id]: text!>`, `<!soul-update[id]: text!>`, "
+            "`<!soul-override[id]: text!>`, and `<!soul-delete[id]!>` tags.*"
         ),
         inline=False,
     )
 
     embed.add_field(
-        name="Dynamic & Game Prompts",
-        value=(
-            "`/set-dynamic-system-prompt` - Set an extra prompt after the main prompt\n"
-            "`/set-word-game` - Set word game rules and enable or disable the game\n"
-            "`/set-word-game-selector-prompt` - Set the hidden-turn prompt for word selection\n"
-            "`/set-secret-word` - Trigger a hidden turn to pick a new secret word\n"
-            "`/set-secret-word-permission` - Grant or revoke a role's access to `/set-secret-word`"
-        ),
+        name="Dynamic Prompt",
+        value="`/set-dynamic-system-prompt` - Set an extra prompt after the main prompt",
         inline=False,
     )
 

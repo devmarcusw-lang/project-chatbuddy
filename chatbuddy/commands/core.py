@@ -173,20 +173,65 @@ async def set_api_endpoint_gemma(interaction: discord.Interaction, endpoint: str
 @app_commands.describe(prompt="The system prompt text")
 @app_commands.default_permissions(administrator=True)
 async def set_sys_instruct(interaction: discord.Interaction, prompt: str):
-    prompt = prompt.replace("\\n", "\n")
-    bot_config["system_prompt"] = prompt
+    write_system_prompt_template(prompt)
+    await interaction.response.send_message(
+        f"✅ System prompt template updated in `{SYSTEM_PROMPT_TEMPLATE_FILE}`.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(name="set-botname", description="Set the bot name used by <!BOTNAME!> prompt variables")
+@app_commands.describe(name="Name to inject wherever <!BOTNAME!> appears")
+@app_commands.default_permissions(administrator=True)
+async def set_botname(interaction: discord.Interaction, name: str):
+    cleaned = name.strip()
+    if not cleaned:
+        await interaction.response.send_message(
+            "⚠️ Bot name cannot be empty.",
+            ephemeral=True,
+        )
+        return
+    bot_config["bot_name"] = cleaned
     save_config(bot_config)
-    await interaction.response.send_message("✅ System prompt updated and saved.", ephemeral=True)
+    await interaction.response.send_message(
+        f"✅ Bot name set to **{cleaned}**.",
+        ephemeral=True,
+    )
+
+
+@bot.tree.command(
+    name="set-bot-personality",
+    description="Set the personality text used by <!BOTPERSONALITY!> prompt variables",
+)
+@app_commands.describe(personality="Personality text to inject wherever <!BOTPERSONALITY!> appears")
+@app_commands.default_permissions(administrator=True)
+async def set_bot_personality(interaction: discord.Interaction, personality: str):
+    cleaned = personality.strip()
+    if not cleaned:
+        await interaction.response.send_message(
+            "⚠️ Bot personality cannot be empty.",
+            ephemeral=True,
+        )
+        return
+    bot_config["bot_personality"] = cleaned
+    save_config(bot_config)
+    await interaction.response.send_message(
+        "✅ Bot personality updated.",
+        ephemeral=True,
+    )
 
 
 @bot.tree.command(name="show-sys-instruct", description="Display the full effective system prompt")
 @app_commands.default_permissions(administrator=True)
 async def show_sys_instruct(interaction: discord.Interaction):
-    prompt = build_system_prompt(bot_config, include_word_game=True)
+    prompt = build_system_prompt(bot_config)
     if not prompt:
         prompt = "(not set)"
 
-    full_text = f"📝 **Current effective system prompt:**\n```\n{prompt}\n```"
+    full_text = (
+        "📝 **Current effective system prompt (rendered from the template file):**\n"
+        f"```\n{prompt}\n```"
+    )
     chunks = chunk_message(full_text)
     await interaction.response.send_message(chunks[0], ephemeral=True)
     for chunk in chunks[1:]:

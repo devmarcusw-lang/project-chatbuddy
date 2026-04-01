@@ -18,6 +18,16 @@ from heartbeat import HeartbeatManager
 from reminders import ReminderManager
 from revival import RevivalManager
 from secret_store import has_secret, set_secret
+from system_prompt_store import (
+    DEFAULT_BOT_NAME,
+    DEFAULT_BOT_PERSONALITY,
+    SYSTEM_PROMPT_TEMPLATE_FILE,
+    ensure_system_prompt_template_file,
+    get_bot_name,
+    get_bot_personality,
+    read_system_prompt_template,
+    write_system_prompt_template,
+)
 from utils import (
     chunk_message,
     collect_context_entries,

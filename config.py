@@ -8,6 +8,12 @@ import math
 import os
 
 from secret_store import migrate_legacy_secrets, scrub_config_secrets
+from system_prompt_store import (
+    DEFAULT_BOT_NAME,
+    DEFAULT_BOT_PERSONALITY,
+    ensure_system_prompt_template_file,
+    migrate_legacy_system_prompt,
+)
 from tamagotchi_inventory import (
     DEFAULT_TAMA_INVENTORY_ITEMS,
     TAMA_INVENTORY_DEFAULTS_VERSION,
@@ -16,7 +22,8 @@ from tamagotchi_inventory import (
 CONFIG_FILE = "config.json"
 
 DEFAULTS = {
-    "system_prompt": "You are a helpful Discord chatbot called ChatBuddy.",
+    "bot_name": DEFAULT_BOT_NAME,
+    "bot_personality": DEFAULT_BOT_PERSONALITY,
     "multimodal_enabled": False,
     "web_search_enabled": False,
     "duck_search_enabled": False,
@@ -52,12 +59,6 @@ DEFAULTS = {
     # Dynamic system prompt â€” appended after main prompt when enabled
     "dynamic_prompt": "",
     "dynamic_prompt_enabled": False,
-    # Word game
-    "word_game_prompt": "",         # prompt text with {secret-word} placeholder
-    "word_game_enabled": False,
-    "word_game_selector_prompt": "",  # system prompt for hidden word-selection turn
-    "secret_word": "",
-    "secret_word_allowed_roles": [],  # role IDs allowed to use /set-secret-word
     # Soul (dynamic auto-updating memory)
     "soul_enabled": False,
     "soul_limit": 2000,
@@ -207,6 +208,15 @@ DEFAULTS = {
     "main_chat_channel_id": "",
 }
 
+REMOVED_CONFIG_KEYS = (
+    "system_prompt",
+    "word_game_prompt",
+    "word_game_enabled",
+    "word_game_selector_prompt",
+    "secret_word",
+    "secret_word_allowed_roles",
+)
+
 
 def _scaled_whole_number(value, *, minimum: float | None = None) -> float:
     scaled = math.ceil(max(0.0, float(value or 0.0)) * 10.0 - 1e-9)
@@ -343,8 +353,10 @@ def _migrate_tamagotchi_default_tuning(config: dict, stored: dict | None = None)
 
 def load_config() -> dict:
     """Load config from disk, falling back to defaults for any missing keys."""
+    ensure_system_prompt_template_file()
     config = dict(DEFAULTS)
     stored: dict | None = None
+    needs_save = False
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -354,16 +366,30 @@ def load_config() -> dict:
             config.update(stored)
         except (json.JSONDecodeError, OSError):
             pass  # Corrupted file â€” use defaults
+
+    if isinstance(stored, dict):
+        if "system_prompt" in stored:
+            migrate_legacy_system_prompt(stored.get("system_prompt"))
+            needs_save = True
+        for key in REMOVED_CONFIG_KEYS:
+            if key in config:
+                config.pop(key, None)
+                needs_save = True
+
     if _migrate_tamagotchi_scale(config, stored):
-        save_config(config)
+        needs_save = True
     if _migrate_tamagotchi_default_tuning(config, stored):
+        needs_save = True
+    if needs_save:
         save_config(config)
     return config
 
 
 def save_config(config: dict) -> None:
     """Atomically write the config dict to disk."""
-    sanitized = scrub_config_secrets(config)
+    sanitized = scrub_config_secrets(dict(config))
+    for key in REMOVED_CONFIG_KEYS:
+        sanitized.pop(key, None)
     tmp_path = CONFIG_FILE + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(sanitized, f, indent=2, ensure_ascii=False)

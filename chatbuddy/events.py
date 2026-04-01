@@ -127,7 +127,10 @@ async def _run_backend_setup(
         bot_config["audio_enabled"] = bool(SETUP_AUDIO_ENDPOINT)
         bot_config["multimodal_enabled"] = True
         bot_config["duck_search_enabled"] = True
-        bot_config["system_prompt"] = SETUP_SYS_INSTRUCT or bot_config.get("system_prompt", "")
+        if SETUP_SYS_INSTRUCT:
+            write_system_prompt_template(SETUP_SYS_INSTRUCT)
+        else:
+            ensure_system_prompt_template_file()
         bot_config["allowed_channels"] = allowed_channels
         bot_config["ce_channels"] = ce_channels
         bot_config["soc_channel_id"] = str(SETUP_THOUGHTS_CHANNEL) if SETUP_THOUGHTS_CHANNEL else None

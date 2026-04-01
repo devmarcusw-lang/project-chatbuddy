@@ -134,17 +134,13 @@ All bot-management commands are owner-gated through `BOT_OWNER_ID` and the `/set
 | `/wipe-soul` | Wipe all soul memory entries |
 | `/set-soul-channel` | Set the channel used for soul update logs |
 
-The bot can manage soul memory through tagged output such as `<!soul-add-new[id]: text>`, `<!soul-update[id]: text>`, `<!soul-override[id]: text>`, and `<!soul-delete[id]>`.
+The bot can manage soul memory through tagged output such as `<!soul-add-new[id]: text!>`, `<!soul-update[id]: text!>`, `<!soul-override[id]: text!>`, and `<!soul-delete[id]!>`.
 
-### Dynamic & Game Prompts
+### Dynamic Prompt
 
 | Command | Description |
 |---|---|
 | `/set-dynamic-system-prompt` | Set an extra prompt appended after the main prompt |
-| `/set-word-game` | Set word game rules and enable/disable the game |
-| `/set-word-game-selector-prompt` | Set the hidden-turn selector prompt |
-| `/set-secret-word` | Trigger a hidden turn to pick a new secret word |
-| `/set-secret-word-permission` | Grant or revoke role access to `/set-secret-word` |
 
 ### Audio Clip Mode
 

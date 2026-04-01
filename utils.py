@@ -213,7 +213,11 @@ def extract_soul_updates(text: str) -> tuple[str, list[tuple[str, str, str]]]:
     """
     updates = []
     pattern = re.compile(
-        r"\\?<\s*\\?!\s*soul-(add-new|update|override|delete)\s*\\?\[\s*(.+?)\s*\\?\](?:\s*:\s*(.*?))?\s*\\?>",
+        r"\\?<\s*\\?!\s*"
+        r"soul-(add-new|update|override|delete)"
+        r"\s*\\?\[\s*(.+?)\s*\\?\]"
+        r"(?:\s*:\s*(.*?))?"
+        r"\s*(?:\\?!\s*)?\\?>",
         re.DOTALL | re.IGNORECASE,
     )
 
