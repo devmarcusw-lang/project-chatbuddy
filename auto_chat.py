@@ -65,13 +65,46 @@ class AutoChatManager:
     def is_idle(self) -> bool:
         return self._idle
 
+    @property
+    def is_running(self) -> bool:
+        return bool(self._task and self._task.is_running())
+
+    def handles_channel(self, channel_id: int | str | None) -> bool:
+        """Return whether auto-chat currently owns the provided channel."""
+        configured_channel_id = self.config.get("auto_chat_channel_id")
+        return bool(
+            self.config.get("auto_chat_enabled")
+            and configured_channel_id is not None
+            and channel_id is not None
+            and str(channel_id) == str(configured_channel_id)
+        )
+
+    def note_activity(self, source: str = "activity") -> bool:
+        """
+        Reset the idle timer after a qualifying external interaction.
+
+        If the loop is currently idle or stopped while auto-chat remains enabled,
+        this restarts it so the next scheduled tick can resume auto responses.
+        """
+        if not self.config.get("auto_chat_enabled"):
+            return False
+
+        was_idle = self._idle
+        self._idle = False
+        self._seconds_since_last_reply = 0
+
+        if was_idle:
+            print(f"[AutoChat] Reactivating from idle mode via {source}.")
+
+        if not self.is_running:
+            print(f"[AutoChat] Restarting loop via {source}.")
+            self.start()
+
+        return True
+
     def reactivate(self):
         """Wake up from idle mode (called from on_message when mentioned)."""
-        if self._idle:
-            print("[AutoChat] Reactivating from idle mode.")
-            self._idle = False
-            self._seconds_since_last_reply = 0
-            self.start()
+        return self.note_activity("reactivate()")
 
     # ------------------------------------------------------------------
     # Core tick

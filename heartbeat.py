@@ -57,6 +57,19 @@ def heartbeat_rest_active(config: dict, *, now: datetime | None = None) -> bool:
     return False
 
 
+def wake_auto_chat_from_heartbeat(bot, config: dict) -> bool:
+    """Reset or wake auto-chat after a heartbeat cycle when auto-chat is enabled."""
+    if not config.get("auto_chat_enabled"):
+        return False
+
+    auto_chat_manager = getattr(bot, "auto_chat_manager", None)
+    if not auto_chat_manager:
+        return False
+
+    auto_chat_manager.note_activity("heartbeat")
+    return True
+
+
 class HeartbeatManager:
     """Fires a generate() call every N minutes."""
 
@@ -208,6 +221,7 @@ class HeartbeatManager:
 
             if is_dead:
                 await broadcast_death(self.bot, self.config)
+            wake_auto_chat_from_heartbeat(self.bot, self.config)
             print(f"[Heartbeat] Fired at {datetime.now().strftime('%H:%M:%S')}.")
 
         except Exception as e:

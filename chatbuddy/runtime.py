@@ -67,7 +67,7 @@ heartbeat_manager = Ref()
 tama_manager = Ref()
 
 bot.tama_manager = tama_manager
+bot.auto_chat_manager = auto_chat_manager
 
 _generating_channels: set[int] = set()
 _pending_messages: dict[int, list] = defaultdict(list)
-

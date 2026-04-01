@@ -212,14 +212,11 @@ async def on_message(message: discord.Message):
         and message.reference.resolved.author == bot.user
     )
 
-    # Auto-chat reactivation: if mentioned/replied in the auto-chat channel
-    # while idle, wake it up and respond normally
-    auto_chat_channel = bot_config.get("auto_chat_channel_id")
-    if auto_chat_channel and channel_key == str(auto_chat_channel):
-        if auto_chat_manager and auto_chat_manager.is_idle:
-            if is_mentioned or is_reply_to_bot:
-                auto_chat_manager.reactivate()
-                # Fall through to normal response below
+    if auto_chat_manager and auto_chat_manager.handles_channel(message.channel.id):
+        if (is_mentioned or is_reply_to_bot) and not message.author.bot:
+            auto_chat_manager.note_activity("mention/reply")
+        await bot.process_commands(message)
+        return
 
     if not is_mentioned and not is_reply_to_bot:
         await bot.process_commands(message)
